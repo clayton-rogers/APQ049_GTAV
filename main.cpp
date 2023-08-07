@@ -93,7 +93,7 @@ std::vector<state_t> do_iter(const std::vector<state_t>& states)
     std::vector<state_t> ret_val;
 
     for (const auto& state : states) {
-        // Assume that we only do at at the start, and never after saving
+        // Assume that we only do a at the start, and never after saving
         // to reduce problem space
         if (!state.has_saved) {
             ret_val.emplace_back(method_a(state));
@@ -203,7 +203,7 @@ int main()
 
         ++current_iter;
 
-        if (current_states.size() == 0) {break;}
+        if (current_states.size() == 0) { break; }
     }
 
     std::cout << "DONE!" << std::endl;
