@@ -4,8 +4,9 @@
 #include <algorithm>
 
 constexpr long BREAK_THRES = 1'000'000'000;
-constexpr long PRUNE_THRESHOLD = 10000000;
+constexpr long PRUNE_THRESHOLD = 20000000;
 
+// xxx top wining state: time: 3398 money: 1,029,000,000 money/time: 302825 aaaaacbbbbbbcbbbbbbcbbbbbbcbbbbbbbbbbbbbbbbbbbbbbb
 
 // 1 BILLION DOLLARS IN GTA V
 //
@@ -55,9 +56,20 @@ state_t method_c(const state_t& state)
     return new_state;
 }
 
+std::string format_with_thousands_sep(long n)
+{
+    std::string s = std::to_string(n);
+    int pos = s.length() - 3;
+    while (pos > 0) {
+        s.insert(pos, ",");
+        pos -= 3;
+    }
+    return s;
+}
+
 void print_state(const state_t& state)
 {
-    std::cout << "time: " << state.time_seconds << " money: " << state.money << " money/time: " << state.money / state.time_seconds << " ";
+    std::cout << "time: " << state.time_seconds << " money: " << format_with_thousands_sep(state.money) << " money/time: " << state.money / state.time_seconds << " ";
     for (const auto& c : state.method_history) {
         std::cout << c;
     }
@@ -99,17 +111,6 @@ bool check_for_wins(const std::vector<state_t>& states)
     return false;
 }
 
-std::string format_with_thousands_sep(long n)
-{
-    std::string s = std::to_string(n);
-    int pos = s.length() - 3;
-    while (pos > 0) {
-        s.insert(pos, ",");
-        pos -= 3;
-    }
-    return s;
-}
-
 int main()
 {
     auto start = method_a(state_t{});
@@ -117,49 +118,45 @@ int main()
     std::vector<state_t> current_states;
     current_states.push_back(start);
 
-    std::vector<state_t> winning_states;
+    state_t best_winning_state = {};
 
     int current_iter = 0;
-    int best_winning_time = 999999;
 
     while (true) {
 
         current_states = do_iter(current_states);
 
-        // Copy out any winning states.
-        std::copy_if(current_states.begin(), current_states.end(),
-            std::back_inserter(winning_states),
-            [](const state_t& state) {return state.money > BREAK_THRES;});
+        std::vector<state_t> next_iter;
+        int win_count = 0;
+        int too_long_count = 0;
 
-        // Print top wining states
-        if (winning_states.size() != 0) {
-            std::cout << "wining states" << std::endl;
+        // See if we can get rid of any
+        for (const auto& state : current_states) {
 
-            // Sort by lowest time
-            std::sort(winning_states.begin(), winning_states.end(),
-                [](state_t a, state_t b) {
-                    return a.time_seconds < b.time_seconds;
-                });
-
-            int i = 0;
-            for (const auto& state : winning_states) {
-                print_state(state);
-                if (++i > 4) { break; }
+            if (state.money > BREAK_THRES) {
+                if (best_winning_state.money == 0) {
+                    best_winning_state = state;
+                }
+                if (state.time_seconds < best_winning_state.time_seconds) {
+                    best_winning_state = state;
+                }
+                ++win_count;
+                // else just drop the useless win
+                continue;
             }
 
-            // Clear an save only the top
-            auto top = winning_states.at(0);
-            best_winning_time = top.time_seconds;
-            winning_states.clear();
-            winning_states.push_back(top);
+            if (best_winning_state.time_seconds != 0 &&
+                state.time_seconds > best_winning_state.time_seconds) {
+                ++too_long_count;
+                // drop state that has already taken too long
+                continue;
+            }
+
+            // any remaining get copied to next iter
+            next_iter.push_back(state);
         }
 
-        // Delete if the state won, or if it's already taken longer than the current best win.
-        std::remove_if(current_states.begin(), current_states.end(),
-            [best_winning_time](const state_t& state) {
-                return state.money > BREAK_THRES ||
-                    state.time_seconds > best_winning_time;
-            });
+        current_states = next_iter;
 
         // Sort states by rate
         std::sort(current_states.begin(), current_states.end(),
@@ -177,19 +174,28 @@ int main()
             current_states = ret_val;
         }
 
-        std::cout << "===== Current iter: " << current_iter << " size: " << current_states.size() << std::endl;
-        if (winning_states.size() != 0) {
-            std::cout << "top wining state: ";
-            print_state(winning_states.at(0));
+        std::cout << "===== Current iter: " << current_iter << " size: " << current_states.size()
+            << " win count: " << win_count << " too long count: " << too_long_count << std::endl;
+        if (best_winning_state.money != 0) {
+            std::cout << "xxx top wining state: ";
+            print_state(best_winning_state);
         }
 
-        // Print top states
-        for (int i = 0; i < 3; ++i) {
-            print_state(current_states.at(i));
+        if (current_states.size() >= 3) {
+        // Print top states by rate
+            for (int i = 0; i < 3; ++i) {
+                print_state(current_states.at(i));
+            }
+            // And bottom states
+            for (unsigned i = current_states.size() - 3; i < current_states.size(); ++i) {
+                print_state(current_states.at(i));
+            }
         }
 
 
         ++current_iter;
+
+        if (current_states.size() == 0) {break;}
     }
 
     // // Filter only the states that have won
