@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <algorithm>
 
-constexpr long BREAK_THRES = 4'000'000'000;
+constexpr long BREAK_THRES = 1'000'000'000;
 constexpr long PRUNE_THRESHOLD = 20000000;
 
 // xxx top wining state: time: 3398 money: 1,029,000,000 money/time: 302825 aaaaacbbbbbbcbbbbbbcbbbbbbcbbbbbbbbbbbbbbbbbbbbbbb
@@ -129,6 +129,7 @@ int main()
     current_states.push_back(start);
 
     state_t best_winning_state = {};
+    std::vector<state_t> all_winning_states;
 
     int current_iter = 0;
 
@@ -149,6 +150,11 @@ int main()
                 }
                 if (state.time_seconds < best_winning_state.time_seconds) {
                     best_winning_state = state;
+                    all_winning_states.clear();
+                    all_winning_states.push_back(best_winning_state);
+                }
+                if (state.time_seconds == best_winning_state.time_seconds) {
+                    all_winning_states.push_back(state);
                 }
                 ++win_count;
                 // else just drop the useless win
@@ -179,8 +185,8 @@ int main()
         std::cout << "===== Current iter: " << current_iter << " size: " << format_with_thousands_sep(current_states.size())
             << " win count: " << win_count << " too long count: " << too_long_count << std::endl;
         if (best_winning_state.money != 0) {
-            std::cout << "xxx top wining state: ";
-            print_state(best_winning_state);
+            std::cout << "xxx top wining states: " << std::endl;
+            print_all(all_winning_states);
         }
 
         if (current_states.size() >= 3) {
