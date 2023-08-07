@@ -3,10 +3,15 @@
 #include <cstdint>
 #include <algorithm>
 
-constexpr long BREAK_THRES = 1'000'000'000;
+constexpr long BREAK_THRES = 4'000'000'000;
 constexpr long PRUNE_THRESHOLD = 20000000;
 
 // xxx top wining state: time: 3398 money: 1,029,000,000 money/time: 302825 aaaaacbbbbbbcbbbbbbcbbbbbbcbbbbbbbbbbbbbbbbbbbbbbb
+// xxx top wining state: time: 3082 money: 1,017,450,000 money/time: 330126 aaaaaaacbbbbbbbbbbbbbbbbcbbbbbbbbbbbbbbbbbcbbbbbbbbbbbbbbbbbb
+
+// xxx top wining state: time: 3350 money: 2,125,200,000 money/time: 634388 aaaaaaaacbbbbbbbbbbbbbbbbbbbbbcbbbbbbbbbbbbbbbbbbbbcbbbbbbbbbbbbbbbbbbbbbb
+
+// xxx top wining state: time: 3560 money: 4,140,500,000 money/time: 1163061 aaaaacbbbbbbbbbbbbcbbbbbbbbbbbbcbbbbbbbbbbbbbcbbbbbbbbbbbbb
 
 // 1 BILLION DOLLARS IN GTA V
 //
@@ -93,8 +98,13 @@ std::vector<state_t> do_iter(const std::vector<state_t>& states)
         if (!state.has_saved) {
             ret_val.emplace_back(method_a(state));
         }
-        ret_val.emplace_back(method_b(state));
-        ret_val.emplace_back(method_c(state));
+        // No point in b if we haven't saved at least once
+        if (state.has_saved) {
+            ret_val.emplace_back(method_b(state));
+        }
+        // If we do a c, then always do a b after, there's no point in doing
+        // multiple c's in a row.
+        ret_val.emplace_back(method_b(method_c(state)));
     }
 
     return ret_val;
@@ -166,15 +176,7 @@ int main()
                 return a_rate > b_rate;
             });
 
-        // Prune if there are too many
-        if (current_states.size() > PRUNE_THRESHOLD) {
-            std::cout << "PRUNED" << std::endl;
-            std::vector<state_t> ret_val;
-            ret_val.assign(current_states.begin(), current_states.begin() + PRUNE_THRESHOLD);
-            current_states = ret_val;
-        }
-
-        std::cout << "===== Current iter: " << current_iter << " size: " << current_states.size()
+        std::cout << "===== Current iter: " << current_iter << " size: " << format_with_thousands_sep(current_states.size())
             << " win count: " << win_count << " too long count: " << too_long_count << std::endl;
         if (best_winning_state.money != 0) {
             std::cout << "xxx top wining state: ";
@@ -197,25 +199,6 @@ int main()
 
         if (current_states.size() == 0) {break;}
     }
-
-    // // Filter only the states that have won
-    // std::vector<state_t> winning_states;
-
-    // std::copy_if(current_states.begin(), current_states.end(),
-    //     std::back_inserter(winning_states),
-    //     [](const state_t& state) {return state.money > BREAK_THRES;});
-
-    // // Sort by lowest time
-    // std::sort(winning_states.begin(), winning_states.end(),
-    //     [](state_t a, state_t b) {
-    //         return a.time_seconds < b.time_seconds;
-    //     });
-
-
-    // std::cout << "Top 5:" << std::endl;
-    // for (int i = 0; i < 5; ++i) {
-    //     print_state(winning_states.at(i));
-    // }
 
     std::cout << "DONE!" << std::endl;
 }
