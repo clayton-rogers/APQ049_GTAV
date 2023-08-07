@@ -185,8 +185,9 @@ int main()
         std::cout << "===== Current iter: " << current_iter << " size: " << format_with_thousands_sep(current_states.size())
             << " win count: " << win_count << " too long count: " << too_long_count << std::endl;
         if (best_winning_state.money != 0) {
-            std::cout << "xxx top wining states: " << std::endl;
+            std::cout << "|||||| top wining states: " << std::endl;
             print_all(all_winning_states);
+            std::cout << "|||||| end" << std::endl;
         }
 
         if (current_states.size() >= 3) {
